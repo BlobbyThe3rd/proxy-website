@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: proxy-website
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: "npm install"
+    startCommand: "npm start"
+    envVars:
+      - key: NODE_VERSION
+        value: 18
