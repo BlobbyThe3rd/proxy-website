@@ -4,72 +4,77 @@
 <meta charset="UTF-8">
 <title>Proxy Browser</title>
 <style>
-    body {
-        margin: 0;
-        background: #0d1117;
-        color: #fff;
-        font-family: Arial, sans-serif;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        height: 100vh;
-        overflow: hidden;
-    }
-    h1 {
-        margin-bottom: 20px;
-    }
-    .form-container {
-        display: flex;
-        gap: 10px;
-        margin-bottom: 20px;
-    }
-    input, select, button {
-        padding: 10px;
-        border: none;
-        border-radius: 5px;
-        font-size: 16px;
-    }
-    input {
-        width: 300px;
-    }
-    canvas {
-        position: fixed;
-        top: 0;
-        left: 0;
-        z-index: -1;
-    }
+body {
+  margin: 0;
+  background: #0d1117;
+  color: #fff;
+  font-family: Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  overflow: hidden;
+}
+h1 {
+  margin-bottom: 20px;
+}
+.form-container {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+input, select, button {
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+}
+input {
+  width: 300px;
+}
+canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: -1;
+}
+iframe {
+  width: 90%;
+  height: 70%;
+  border: none;
+  background: white;
+}
 </style>
 </head>
 <body>
-    <canvas id="bg"></canvas>
-    <h1>Proxy Browser</h1>
-    <div class="form-container">
-        <input type="text" id="url" placeholder="Enter website URL">
-        <select id="country">
-            <option value="norway">Norway (Default)</option>
-            <option value="usa">USA</option>
-            <option value="uk">UK</option>
-            <option value="germany">Germany</option>
-            <option value="canada">Canada</option>
-            <option value="france">France</option>
-            <option value="japan">Japan</option>
-            <option value="india">India</option>
-            <option value="australia">Australia</option>
-            <option value="brazil">Brazil</option>
-        </select>
-        <button onclick="loadSite()">Go</button>
-    </div>
-    <iframe id="viewer" style="width:90%; height:70%; border:none;"></iframe>
+<canvas id="bg"></canvas>
+<h1>Proxy Browser</h1>
+<div class="form-container">
+  <input type="text" id="url" placeholder="Enter website URL">
+  <select id="country">
+    <option value="norway">Norway (Default)</option>
+    <option value="usa">USA</option>
+    <option value="uk">UK</option>
+    <option value="germany">Germany</option>
+    <option value="canada">Canada</option>
+    <option value="france">France</option>
+    <option value="japan">Japan</option>
+    <option value="india">India</option>
+    <option value="australia">Australia</option>
+    <option value="brazil">Brazil</option>
+  </select>
+  <button onclick="loadSite()">Go</button>
+</div>
+<iframe id="viewer"></iframe>
 <script>
 function loadSite() {
-    const url = document.getElementById('url').value;
-    const country = document.getElementById('country').value;
-    if (!url) return alert('Enter a URL');
-    document.getElementById('viewer').src = `/proxy?url=${encodeURIComponent(url)}&country=${country}`;
+  const url = document.getElementById('url').value;
+  const country = document.getElementById('country').value;
+  if (!url) return alert('Enter a URL');
+  document.getElementById('viewer').src = `/proxy?url=${encodeURIComponent(url)}&country=${country}`;
 }
 
-// Animated background
 const canvas = document.getElementById('bg');
 const ctx = canvas.getContext('2d');
 let w, h;
@@ -78,37 +83,37 @@ window.addEventListener('resize', resize);
 resize();
 
 const dots = Array.from({ length: 50 }, () => ({
-    x: Math.random() * w,
-    y: Math.random() * h,
-    dx: (Math.random() - 0.5) * 1.5,
-    dy: (Math.random() - 0.5) * 1.5
+  x: Math.random() * w,
+  y: Math.random() * h,
+  dx: (Math.random() - 0.5) * 1.5,
+  dy: (Math.random() - 0.5) * 1.5
 }));
 
 function animate() {
-    ctx.clearRect(0, 0, w, h);
-    for (let i = 0; i < dots.length; i++) {
-        const d = dots[i];
-        d.x += d.dx;
-        d.y += d.dy;
-        if (d.x < 0 || d.x > w) d.dx *= -1;
-        if (d.y < 0 || d.y > h) d.dy *= -1;
+  ctx.clearRect(0, 0, w, h);
+  for (let i = 0; i < dots.length; i++) {
+    const d = dots[i];
+    d.x += d.dx;
+    d.y += d.dy;
+    if (d.x < 0 || d.x > w) d.dx *= -1;
+    if (d.y < 0 || d.y > h) d.dy *= -1;
+    ctx.beginPath();
+    ctx.arc(d.x, d.y, 3, 0, Math.PI * 2);
+    ctx.fillStyle = '#00aaff';
+    ctx.fill();
+    for (let j = i + 1; j < dots.length; j++) {
+      const d2 = dots[j];
+      const dist = Math.hypot(d.x - d2.x, d.y - d2.y);
+      if (dist < 150) {
         ctx.beginPath();
-        ctx.arc(d.x, d.y, 3, 0, Math.PI * 2);
-        ctx.fillStyle = '#00aaff';
-        ctx.fill();
-        for (let j = i + 1; j < dots.length; j++) {
-            const d2 = dots[j];
-            const dist = Math.hypot(d.x - d2.x, d.y - d2.y);
-            if (dist < 150) {
-                ctx.beginPath();
-                ctx.moveTo(d.x, d.y);
-                ctx.lineTo(d2.x, d2.y);
-                ctx.strokeStyle = 'rgba(0,170,255,0.3)';
-                ctx.stroke();
-            }
-        }
+        ctx.moveTo(d.x, d.y);
+        ctx.lineTo(d2.x, d2.y);
+        ctx.strokeStyle = 'rgba(0,170,255,0.3)';
+        ctx.stroke();
+      }
     }
-    requestAnimationFrame(animate);
+  }
+  requestAnimationFrame(animate);
 }
 animate();
 </script>
