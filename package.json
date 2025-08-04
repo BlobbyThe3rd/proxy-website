@@ -1,7 +1,7 @@
 {
   "name": "proxy-website",
-  "version": "1.0.0",
-  "description": "Proxy website with clean UI and animated background",
+  "version": "2.0.0",
+  "description": "Advanced Proxy Website with Asset Rewriting and Country IP Selection",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
