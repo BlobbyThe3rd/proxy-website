@@ -58,14 +58,27 @@ app.get("/proxy", (req, res) => {
   request({
     url: targetUrl,
     proxy: proxy || undefined,
-    headers: { "User-Agent": "Mozilla/5.0" }
-  }, async (error, response, body) => {
+    headers: {
+      "User-Agent": "Mozilla/5.0",
+      "Cookie": req.headers.cookie || ""
+    }
+  })
+    .on("response", (response) => {
+      if (response.headers["set-cookie"]) {
+        res.setHeader("set-cookie", response.headers["set-cookie"]);
+      }
+    })
+    .on("error", () => {
+      res.status(500).send("Failed to fetch page");
+    })
+    .pipe(res, { end: false });
+
+  request({ url: targetUrl, headers: { "User-Agent": "Mozilla/5.0" } }, async (error, response, body) => {
     if (error || !body) return res.status(500).send("Failed to fetch page");
 
-    // Rewrite HTML
     const $ = cheerio.load(body);
 
-    // Rewrite links and resources
+    // Rewrite links
     $("a").each((i, el) => {
       const href = $(el).attr("href");
       if (href && !href.startsWith("javascript:") && !href.startsWith("#")) {
@@ -74,6 +87,16 @@ app.get("/proxy", (req, res) => {
       }
     });
 
+    // Rewrite forms
+    $("form").each((i, el) => {
+      const action = $(el).attr("action");
+      if (action) {
+        const absolute = new URL(action, targetUrl).href;
+        $(el).attr("action", `/proxy?url=${encodeURIComponent(absolute)}&country=${country}`);
+      }
+    });
+
+    // Rewrite resources
     $("img, script, link").each((i, el) => {
       const attr = $(el).attr("src") || $(el).attr("href");
       if (attr) {
@@ -83,9 +106,39 @@ app.get("/proxy", (req, res) => {
       }
     });
 
+    // Inline styles
+    $("[style]").each((i, el) => {
+      let style = $(el).attr("style");
+      style = style.replace(/url\(['"]?(.*?)['"]?\)/g, (match, p1) => {
+        const absolute = new URL(p1, targetUrl).href;
+        return `url(/proxy?url=${encodeURIComponent(absolute)}&country=${country})`;
+      });
+      $(el).attr("style", style);
+    });
+
+    // Inject JS patch for dynamic requests
+    $("body").append(`
+<script>
+(function() {
+  const proxyBase = '/proxy?country=${country}&url=';
+  const origFetch = window.fetch;
+  window.fetch = function(input, init) {
+    const url = (typeof input === 'string') ? input : input.url;
+    const proxied = proxyBase + encodeURIComponent(new URL(url, location.href).href);
+    return origFetch(proxied, init);
+  };
+  const origXhrOpen = XMLHttpRequest.prototype.open;
+  XMLHttpRequest.prototype.open = function(method, url) {
+    const proxied = proxyBase + encodeURIComponent(new URL(url, location.href).href);
+    return origXhrOpen.apply(this, [method, proxied]);
+  };
+})();
+</script>
+`);
+
     res.setHeader("Content-Security-Policy", "");
     res.setHeader("X-Frame-Options", "");
-    res.send($.html());
+    res.end($.html());
   });
 });
 
